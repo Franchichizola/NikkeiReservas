@@ -1,5 +1,7 @@
 import { CalendarDays } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../auth';
 import { apiDisponibilidad, apiReservar, CanchaConTurnos, Reserva, Turno } from '../api';
 import { DIAS_ANTICIPACION, fechaCorta, hoy, mensajeError, pesos, sumarDias } from '../utils';
 import Campo from './Campo';
@@ -15,6 +17,7 @@ interface Props {
 
 // Pop up que se abre al elegir una cancha: se elige la fecha, se ven sus turnos y se reserva.
 export default function ModalCancha({ cancha, onCerrar, onReservada }: Props) {
+  const { usuario } = useAuth(); // sin sesión se pueden ver los turnos, pero no reservarlos
   const [fecha, setFecha] = useState(hoy());
   const [grilla, setGrilla] = useState<CanchaConTurnos[] | null>(null); // null = cargando
   const [version, setVersion] = useState(0); // al sumarle 1 se vuelve a pedir la grilla
@@ -102,15 +105,34 @@ export default function ModalCancha({ cancha, onCerrar, onReservada }: Props) {
           <p className="font-semibold">
             {cancha.nombre} · {fechaCorta(fecha)} · {elegido.hora} hs · {pesos(elegido.precio)}
           </p>
-          <p className="mb-3 text-sm text-gray-700">Al reservar, el turno queda retenido unos minutos para que pagues la seña.</p>
-          <div className="flex gap-2">
-            <button type="button" className="btn-primario" disabled={ocupado} onClick={reservar}>
-              {ocupado ? 'Reservando...' : 'Reservar este turno'}
-            </button>
-            <button type="button" className="btn-secundario" onClick={() => setElegido(null)}>
-              Elegir otro
-            </button>
-          </div>
+          {usuario ? (
+            <>
+              <p className="mb-3 text-sm text-gray-700">Al reservar, el turno queda retenido unos minutos para que pagues la seña.</p>
+              <div className="flex gap-2">
+                <button type="button" className="btn-primario" disabled={ocupado} onClick={reservar}>
+                  {ocupado ? 'Reservando...' : 'Reservar este turno'}
+                </button>
+                <button type="button" className="btn-secundario" onClick={() => setElegido(null)}>
+                  Elegir otro
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mb-3 text-sm text-gray-700">Este turno está libre. Para reservarlo tenés que iniciar sesión.</p>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/login" className="btn-primario">
+                  Ingresar para reservar
+                </Link>
+                <Link to="/registro" className="btn-secundario">
+                  Crear cuenta
+                </Link>
+                <button type="button" className="btn-secundario" onClick={() => setElegido(null)}>
+                  Elegir otro
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 

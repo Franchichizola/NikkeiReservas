@@ -38,9 +38,12 @@ export default function Home() {
               </Link>
             ) : (
               <>
-                <Link to="/login" className="inline-flex items-center gap-2 rounded-lg bg-amarilla px-5 py-3 font-bold text-pasto-900 hover:brightness-95">
-                  Ingresar y reservar
+                <Link to="/reservar" className="inline-flex items-center gap-2 rounded-lg bg-amarilla px-5 py-3 font-bold text-pasto-900 hover:brightness-95">
+                  Ver turnos disponibles
                   <ArrowRight className="h-5 w-5" />
+                </Link>
+                <Link to="/login" className="inline-flex items-center gap-2 rounded-lg border border-white/60 px-5 py-3 font-semibold hover:bg-white/10">
+                  Ingresar
                 </Link>
                 <Link to="/registro" className="inline-flex items-center gap-2 rounded-lg border border-white/60 px-5 py-3 font-semibold hover:bg-white/10">
                   Crear cuenta

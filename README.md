@@ -1,40 +1,243 @@
-# Nikkei Reservas – Backend (MVP)
+# Nikkei Reservas
 
-API REST en Node.js + Express + TypeScript, con PostgreSQL y Prisma.
-Cubre los requerimientos funcionales de prioridad Alta del SRS (RF001 a RF005, RF007, RF008, RF011 a RF017, RF019).
+Sistema de reservas de canchas de fútbol 5, fútbol 7 y pádel.
 
-## Requisitos
+- **Backend:** Node.js + Express + TypeScript, con PostgreSQL y Prisma (carpeta `backend/`, puerto 3000).
+- **Frontend:** React + Vite + Tailwind (carpeta `frontend/`, puerto 5173).
+- **Base de datos:** PostgreSQL 16, que se levanta con Docker (`docker-compose.yml`).
 
-- Node.js 22 o superior
-- Docker con Docker Compose (solo para PostgreSQL)
+Para ejecutar el proyecto se necesitan **tres cosas corriendo a la vez**: la base de datos, el backend y el frontend (cada uno en su propia terminal).
 
-## Puesta en marcha (paso a paso)
+---
+
+## 1. Requisitos (todos los sistemas operativos)
+
+| Herramienta | Versión | Para qué |
+|---|---|---|
+| Node.js | 22 o superior (incluye `npm`) | Backend y frontend |
+| Docker | Docker Desktop (Windows/Mac) o Docker Engine + Compose (Linux) | PostgreSQL |
+| Git | Cualquiera (opcional) | Clonar el repositorio |
+
+Verificá las versiones en una terminal:
 
 ```bash
-# 1) Base de datos (desde la carpeta raíz, donde está docker-compose.yml)
+node -v      # debe mostrar v22.x o superior
+npm -v
+docker --version
+docker compose version
+```
+
+> Si no querés usar Docker, mirá la sección [PostgreSQL sin Docker](#postgresql-sin-docker).
+
+---
+
+## 2. Windows
+
+Usá **PowerShell** (no hace falta ser administrador).
+
+### 2.1 Instalar lo necesario
+
+1. **Node.js 22+**: descargalo de <https://nodejs.org> (versión LTS o superior) o instalalo con:
+   ```powershell
+   winget install OpenJS.NodeJS.LTS
+   ```
+2. **Docker Desktop**: <https://www.docker.com/products/docker-desktop/> (o `winget install Docker.DockerDesktop`).
+   Después de instalarlo, **abrí Docker Desktop y esperá a que diga "Engine running"** antes de seguir. Puede pedir reiniciar la PC y activar WSL 2.
+3. Cerrá y volvé a abrir PowerShell para que reconozca los comandos nuevos.
+
+### 2.2 Ejecutar el proyecto
+
+**Terminal 1: base de datos y backend**
+
+```powershell
+# Ubicate en la carpeta raíz del proyecto (donde está docker-compose.yml)
+cd C:\ruta\a\Nikkei
+
+# 1) Levantar PostgreSQL
 docker compose up -d
 
-# 2) Entrar al backend e instalar dependencias
+# 2) Instalar dependencias del backend
 cd backend
 npm install
 
-# 3) Variables de entorno
-cp .env.example .env          # en Windows: copy .env.example .env
+# 3) Crear el archivo de variables de entorno
+copy .env.example .env
 
-# 4) Crear las tablas y la restricción anti-superposición (migraciones SQL)
+# 4) Crear las tablas (migraciones)
 npx prisma migrate deploy
 
-# 5) Cargar datos iniciales (9 canchas, tarifas, usuarios de prueba)
+# 5) Cargar datos iniciales (canchas, tarifas, usuarios de prueba)
 npm run db:seed
 
-# 6) Arrancar en modo desarrollo (se reinicia solo al guardar)
+# 6) Arrancar el backend
 npm run dev
 ```
 
-La API queda en `http://localhost:3000`. Probá: `curl http://localhost:3000/api/health`.
-Para producción: `npm run build` y luego `npm start`.
+**Terminal 2: frontend** (abrí otra ventana de PowerShell)
 
-## Usuarios de prueba
+```powershell
+cd C:\ruta\a\Nikkei\frontend
+npm install
+copy .env.example .env
+npm run dev
+```
+
+### 2.3 Problemas frecuentes en Windows
+
+- **`Cannot find module '.prisma/client/default'`**: no se generó el cliente de Prisma. Dentro de `backend` ejecutá `npx prisma generate` y volvé a correr `npm run dev`. Si sigue fallando, borrá `node_modules` (`Remove-Item -Recurse -Force node_modules`), corré `npm install` y `npx prisma generate`.
+- **OneDrive**: si el proyecto está dentro de una carpeta sincronizada con OneDrive (por ejemplo `Documents`), puede bloquear archivos durante `npm install`. Pausá la sincronización o mové el proyecto a una ruta como `C:\Nikkei`.
+- **`docker : The term 'docker' is not recognized`**: Docker Desktop no está instalado o no está abierto. Abrilo y reiniciá PowerShell.
+- **`npm : ... running scripts is disabled on this system`**: ejecutá una vez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` y reabrí PowerShell.
+- **El puerto 5432 ya está en uso**: tenés otro PostgreSQL instalado en Windows. Detené ese servicio (`services.msc` → *postgresql*) o cambiá el puerto en `docker-compose.yml` y en `DATABASE_URL`.
+
+---
+
+## 3. macOS
+
+Usá la app **Terminal**.
+
+### 3.1 Instalar lo necesario
+
+Con [Homebrew](https://brew.sh) (si no lo tenés, instalalo desde su página):
+
+```bash
+brew install node@22
+brew install --cask docker
+```
+
+> Si `node -v` no muestra la versión 22, ejecutá `brew link --overwrite node@22` o usá el instalador de <https://nodejs.org>.
+
+Abrí **Docker Desktop** una vez (desde Aplicaciones) y esperá a que termine de iniciar.
+
+### 3.2 Ejecutar el proyecto
+
+**Terminal 1: base de datos y backend**
+
+```bash
+# Ubicate en la carpeta raíz del proyecto (donde está docker-compose.yml)
+cd ~/ruta/a/Nikkei
+
+# 1) Levantar PostgreSQL
+docker compose up -d
+
+# 2) Instalar dependencias del backend
+cd backend
+npm install
+
+# 3) Crear el archivo de variables de entorno
+cp .env.example .env
+
+# 4) Crear las tablas (migraciones)
+npx prisma migrate deploy
+
+# 5) Cargar datos iniciales
+npm run db:seed
+
+# 6) Arrancar el backend
+npm run dev
+```
+
+**Terminal 2: frontend** (nueva pestaña con `Cmd + T`)
+
+```bash
+cd ~/ruta/a/Nikkei/frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+### 3.3 Problemas frecuentes en macOS
+
+- **`Cannot find module '.prisma/client/default'`**: dentro de `backend` ejecutá `npx prisma generate` y volvé a correr `npm run dev`.
+- **`Cannot connect to the Docker daemon`**: Docker Desktop no está abierto. Abrilo y esperá a que inicie.
+- **Puerto 5432 ocupado**: tenés otro PostgreSQL corriendo (por ejemplo, de Homebrew). Detenelo con `brew services stop postgresql` o cambiá el puerto en `docker-compose.yml` y en `DATABASE_URL`.
+- **Puerto 5000/3000 ocupado**: el backend usa el 3000. Si está en uso, cambiá `PORT` en `backend/.env` y `VITE_API_URL` en `frontend/.env`.
+
+---
+
+## 4. Linux (Ubuntu / Debian)
+
+Usá una terminal. Los comandos de instalación son para Ubuntu/Debian; en otras distribuciones usá el gestor de paquetes equivalente.
+
+### 4.1 Instalar lo necesario
+
+**Node.js 22** (con NodeSource):
+
+```bash
+sudo apt update
+sudo apt install -y curl ca-certificates
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+**Docker Engine y Compose** (script oficial):
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+```
+
+Después de `usermod`, **cerrá sesión y volvé a entrar** (o ejecutá `newgrp docker`) para usar Docker sin `sudo`.
+
+### 4.2 Ejecutar el proyecto
+
+**Terminal 1: base de datos y backend**
+
+```bash
+# Ubicate en la carpeta raíz del proyecto (donde está docker-compose.yml)
+cd ~/ruta/a/Nikkei
+
+# 1) Levantar PostgreSQL
+docker compose up -d
+
+# 2) Instalar dependencias del backend
+cd backend
+npm install
+
+# 3) Crear el archivo de variables de entorno
+cp .env.example .env
+
+# 4) Crear las tablas (migraciones)
+npx prisma migrate deploy
+
+# 5) Cargar datos iniciales
+npm run db:seed
+
+# 6) Arrancar el backend
+npm run dev
+```
+
+**Terminal 2: frontend**
+
+```bash
+cd ~/ruta/a/Nikkei/frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+### 4.3 Problemas frecuentes en Linux
+
+- **`permission denied while trying to connect to the Docker daemon socket`**: tu usuario no está en el grupo `docker`. Ejecutá `sudo usermod -aG docker $USER` y volvé a iniciar sesión.
+- **`Cannot find module '.prisma/client/default'`**: dentro de `backend` ejecutá `npx prisma generate` y volvé a correr `npm run dev`.
+- **Puerto 5432 ocupado**: hay un PostgreSQL instalado en el sistema. Detenelo con `sudo systemctl stop postgresql` o cambiá el puerto en `docker-compose.yml` y en `DATABASE_URL`.
+- **Node con una versión vieja** (`apt` instala una anterior a la 22): usá NodeSource como se muestra arriba o [nvm](https://github.com/nvm-sh/nvm): `nvm install 22`.
+
+---
+
+## 5. Abrir la aplicación
+
+Con la base de datos, el backend y el frontend corriendo:
+
+| Qué | Dirección |
+|---|---|
+| Aplicación (frontend) | <http://localhost:5173> |
+| API (backend) | <http://localhost:3000> |
+| Chequeo del backend | <http://localhost:3000/api/health> (debe responder `{"ok":true}`) |
+
+Sin iniciar sesión se pueden **ver los turnos disponibles**, pero para **reservar** hay que ingresar con una cuenta de cliente.
+
+### Usuarios de prueba
 
 Contraseña de todos: `Nikkei1234`
 
@@ -44,207 +247,90 @@ Contraseña de todos: `Nikkei1234`
 | Encargado | encargada@nikkei.com |
 | Recepcionista | recepcion@nikkei.com |
 | Cliente | cliente@nikkei.com |
-|password | Nikkei1234 |
-Los roles se heredan: el encargado puede hacer lo del recepcionista, y el administrador lo del encargado.
+| Password | Nikkei1234 |
 
-## Probar el flujo completo en 4 comandos
+Los roles se heredan: el encargado puede hacer lo del recepcionista y el administrador lo del encargado.
 
-```bash
-# 1. Iniciar sesión como cliente y guardar el token
-TOKEN=$(curl -s -X POST localhost:3000/api/auth/login -H "Content-Type: application/json" \
-  -d '{"email":"cliente@nikkei.com","password":"Nikkei1234"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
+---
 
-# 2. Reservar (queda RETENIDA 10 minutos). Usá una fecha entre hoy y los próximos 30 días.
-curl -s -X POST localhost:3000/api/reservas -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"canchaId":1,"fecha":"2026-11-25","hora":"20:00"}'
+## 6. Variables de entorno
 
-# 3. Pedir el pago de la seña (devuelve "externoId")
-curl -s -X POST localhost:3000/api/reservas/1/pagar-sena -H "Authorization: Bearer $TOKEN"
+**`backend/.env`**
 
-# 4. Simular el aviso de Mercado Pago (la reserva pasa a SENADA)
-curl -s -X POST localhost:3000/api/pagos/webhook/mercadopago -H "x-webhook-secret: secreto-webhook-prueba" \
-  -H "Content-Type: application/json" -d '{"externoId":"SIM-1-...","status":"approved"}'
-```
+| Variable | Valor por defecto | Descripción |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://nikkei:nikkei@localhost:5432/nikkei` | Conexión a PostgreSQL |
+| `JWT_SECRET` | `secret123` | Secreto para firmar las sesiones (hay que cambiarlo en un proyecto real) |
+| `JWT_EXPIRA` | `8h` | Duración de la sesión |
+| `PORT` | `3000` | Puerto del backend |
+| `WEBHOOK_SECRET` | `webhook_prueba` | Secreto del webhook simulado de Mercado Pago |
 
-## Endpoints
+**`frontend/.env`**
 
-Todos devuelven JSON. Los errores tienen la forma `{ "error": "mensaje" }` (los de validación agregan `detalles`).
-Salvo los marcados como públicos, hay que mandar `Authorization: Bearer <token>`.
-En los ejemplos, `$TOKEN` es el token del rol indicado. Fechas: `AAAA-MM-DD`; horas: `HH:MM` (hora de Buenos Aires).
+| Variable | Valor por defecto | Descripción |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:3000` | URL del backend (sin `/api` al final) |
+| `VITE_WEBHOOK_SECRET` | `webhook_prueba` | Debe ser igual a `WEBHOOK_SECRET` del backend (solo para el pago simulado) |
 
-### Autenticación (públicos salvo `/me`)
+Si cambiás un `.env`, reiniciá el servidor correspondiente.
 
-```bash
-# POST /api/auth/registro – crea un cliente (devuelve token)
-curl -X POST localhost:3000/api/auth/registro -H "Content-Type: application/json" \
-  -d '{"nombre":"Ana","apellido":"Lopez","email":"ana@mail.com","telefono":"1155551111","password":"clave1234","aceptaTerminos":true}'
+---
 
-# POST /api/auth/login
-curl -X POST localhost:3000/api/auth/login -H "Content-Type: application/json" \
-  -d '{"email":"cliente@nikkei.com","password":"Nikkei1234"}'
-
-# GET /api/auth/me – datos del usuario logueado
-curl localhost:3000/api/auth/me -H "Authorization: Bearer $TOKEN"
-```
-
-### Disponibilidad (público)
+## 7. Comandos útiles
 
 ```bash
-# GET /api/disponibilidad?fecha=&deporte=&canchaId=   (deporte: FUTBOL5 | FUTBOL7 | PADEL; los dos filtros son opcionales)
-curl "localhost:3000/api/disponibilidad?fecha=2026-11-25&deporte=PADEL"
-```
-Cada turno trae `hora`, `precio` y `estado`: `LIBRE`, `OCUPADO` o `NO_DISPONIBLE` (pasado o bloqueado).
+# Detener la base de datos (conserva los datos)
+docker compose stop
 
-### Reservas del cliente (rol CLIENTE)
+# Volver a levantarla
+docker compose up -d
+
+# Borrar la base de datos por completo (se pierden todos los datos)
+docker compose down -v
+
+# Backend (dentro de backend/)
+npm run dev          # desarrollo, se reinicia al guardar
+npm run build        # compila a dist/
+npm start            # ejecuta lo compilado (producción)
+npm run db:seed      # carga datos iniciales (se puede repetir sin problema)
+npx prisma generate  # regenera el cliente de Prisma
+
+# Frontend (dentro de frontend/)
+npm run dev          # desarrollo
+npm run build        # compila para producción
+npm run preview      # sirve la versión compilada
+```
+
+> Las migraciones se aplican con `npx prisma migrate deploy`. No uses `migrate dev` sin leer antes: Prisma no conoce la restricción anti-superposición de turnos que está escrita a mano en SQL.
+
+---
+
+## PostgreSQL sin Docker
+
+Si preferís instalar PostgreSQL directamente (versión 14 o superior, con el paquete de extensiones `contrib` porque las migraciones usan `btree_gist`):
+
+1. Instalá PostgreSQL: [Windows y macOS](https://www.postgresql.org/download/) o, en Ubuntu/Debian, `sudo apt install postgresql postgresql-contrib`.
+2. Creá el usuario y la base:
+   ```bash
+   # Linux
+   sudo -u postgres psql -c "CREATE USER nikkei WITH PASSWORD 'nikkei' SUPERUSER;"
+   sudo -u postgres psql -c "CREATE DATABASE nikkei OWNER nikkei;"
+   # macOS / Windows: abrí `psql` con tu usuario administrador y ejecutá las mismas dos sentencias SQL
+   ```
+3. Dejá `DATABASE_URL` en `backend/.env` apuntando a esa base y seguí desde el paso de `npx prisma migrate deploy`.
+
+---
+
+## Resumen rápido
 
 ```bash
-# POST /api/reservas – retiene el turno 10 minutos
-curl -X POST localhost:3000/api/reservas -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"canchaId":1,"fecha":"2026-11-25","hora":"20:00"}'
+docker compose up -d                                   # raíz del proyecto
+cd backend && npm install && cp .env.example .env      # en Windows: copy
+npx prisma migrate deploy && npm run db:seed
+npm run dev                                            # terminal 1
 
-# GET /api/reservas/mias – historial con estado y pagos
-curl localhost:3000/api/reservas/mias -H "Authorization: Bearer $TOKEN"
-
-# POST /api/reservas/:id/pagar-sena – crea el pago pendiente (simulado) y devuelve "externoId"
-curl -X POST localhost:3000/api/reservas/1/pagar-sena -H "Authorization: Bearer $TOKEN"
-
-# POST /api/reservas/:id/cancelar – con 12 h o más reembolsa la seña; con menos, no
-curl -X POST localhost:3000/api/reservas/1/cancelar -H "Authorization: Bearer $TOKEN"
-
-# POST /api/reservas/:id/reprogramar – una sola vez, 12 h antes, mismo deporte (canchaId opcional)
-curl -X POST localhost:3000/api/reservas/1/reprogramar -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"fecha":"2026-11-26","hora":"21:00"}'
+cd frontend && npm install && cp .env.example .env    # en Windows: copy
+npm run dev                                            # terminal 2
 ```
 
-### Webhook simulado de Mercado Pago (sin token; usa el encabezado `x-webhook-secret` del `.env`)
-
-```bash
-# POST /api/pagos/webhook/mercadopago – status: approved | rejected | pending
-curl -X POST localhost:3000/api/pagos/webhook/mercadopago -H "x-webhook-secret: secreto-webhook-prueba" \
-  -H "Content-Type: application/json" -d '{"externoId":"SIM-1-1700000000000","status":"approved"}'
-```
-Es seguro mandarlo más de una vez. Si el pago llega después de que venció la retención y el turno ya lo tomó otro, se reembolsa solo.
-
-### Recepción (desde RECEPCIONISTA)
-
-```bash
-# GET /api/recepcion/grilla?fecha=&dias=&deporte=   (dias=1 diaria, hasta 7 semanal)
-curl "localhost:3000/api/recepcion/grilla?fecha=2026-11-25&dias=1" -H "Authorization: Bearer $TOKEN"
-
-# GET /api/recepcion/clientes?q=   – busca por nombre, apellido o teléfono
-curl "localhost:3000/api/recepcion/clientes?q=juan" -H "Authorization: Bearer $TOKEN"
-
-# POST /api/recepcion/reservas – carga manual. Usá "clienteId" o "cliente" (alta rápida). "sena" es opcional.
-# medios: EFECTIVO | TRANSFERENCIA | QR | TARJETA. Con 3 ausencias en 60 días hay que pagar el total.
-curl -X POST localhost:3000/api/recepcion/reservas -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"canchaId":3,"fecha":"2026-11-25","hora":"19:00","cliente":{"nombre":"Pedro","telefono":"1144445555"},"sena":{"medio":"EFECTIVO","monto":15000}}'
-
-# GET /api/recepcion/reservas/:id – detalle con pagos
-curl localhost:3000/api/recepcion/reservas/1 -H "Authorization: Bearer $TOKEN"
-
-# PATCH /api/recepcion/reservas/:id – cambia horario o cancha (mismo deporte)
-curl -X PATCH localhost:3000/api/recepcion/reservas/1 -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"fecha":"2026-11-25","hora":"21:00"}'
-
-# POST /api/recepcion/reservas/:id/cancelar – aplica la política; el ENCARGADO puede exceptuarla
-curl -X POST localhost:3000/api/recepcion/reservas/1/cancelar -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"exceptuar":true,"motivo":"Lluvia"}'
-
-# POST /api/recepcion/reservas/:id/checkin – el turno pasa a EN_JUEGO
-curl -X POST localhost:3000/api/recepcion/reservas/1/checkin -H "Authorization: Bearer $TOKEN"
-
-# POST /api/recepcion/reservas/:id/cobrar-saldo – cobra lo que falta, finaliza y devuelve el comprobante
-curl -X POST localhost:3000/api/recepcion/reservas/1/cobrar-saldo -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"medio":"QR"}'
-
-# POST /api/recepcion/reservas/:id/ausente – solo pasados 15 min del inicio; retiene la seña
-curl -X POST localhost:3000/api/recepcion/reservas/1/ausente -H "Authorization: Bearer $TOKEN"
-```
-
-### Bloqueos de canchas (desde ENCARGADO)
-
-```bash
-# GET /api/bloqueos – vigentes y futuros
-curl localhost:3000/api/bloqueos -H "Authorization: Bearer $TOKEN"
-
-# GET /api/bloqueos/afectadas – vista previa de las reservas que quedarían afectadas
-curl -G localhost:3000/api/bloqueos/afectadas -H "Authorization: Bearer $TOKEN" \
-  --data-urlencode "canchaIds=1,2" --data-urlencode "desde=2026-11-25T15:00:00-03:00" --data-urlencode "hasta=2026-11-25T18:00:00-03:00"
-
-# POST /api/bloqueos – hay que decidir cada reserva afectada (CANCELAR = reembolso total, o REPROGRAMAR).
-# Si falta alguna decisión responde 409 con la lista. Todo se aplica en una transacción.
-curl -X POST localhost:3000/api/bloqueos -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"canchaIds":[1],"desde":"2026-11-25T15:00:00-03:00","hasta":"2026-11-25T18:00:00-03:00","motivo":"Mantenimiento",
-       "acciones":[{"reservaId":4,"accion":"REPROGRAMAR","fecha":"2026-11-25","hora":"19:00"},{"reservaId":5,"accion":"CANCELAR"}]}'
-
-# DELETE /api/bloqueos/:id – levanta el bloqueo
-curl -X DELETE localhost:3000/api/bloqueos/1 -H "Authorization: Bearer $TOKEN"
-```
-
-### Caja (desde ENCARGADO)
-
-```bash
-# GET /api/caja/resumen?fecha= – cobros por medio, reembolsos, efectivo esperado y turnos sin resolver
-curl "localhost:3000/api/caja/resumen?fecha=2026-11-19" -H "Authorization: Bearer $TOKEN"
-
-# POST /api/caja/cierre – si hay diferencia de efectivo, "observacion" es obligatoria
-curl -X POST localhost:3000/api/caja/cierre -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"fecha":"2026-11-19","efectivoContado":12000}'
-
-# POST /api/caja/reabrir – solo ADMINISTRADOR
-curl -X POST localhost:3000/api/caja/reabrir -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"fecha":"2026-11-19","motivo":"Faltó cargar un cobro"}'
-```
-
-### Administración (solo ADMINISTRADOR)
-
-```bash
-# Canchas (no se borran: se desactivan; con reservas futuras hay que usar un bloqueo)
-curl localhost:3000/api/admin/canchas -H "Authorization: Bearer $TOKEN"                                   # GET
-curl -X POST localhost:3000/api/admin/canchas -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nombre":"Pádel - Cancha 4","deporte":"PADEL"}'                                                     # POST
-curl -X PATCH localhost:3000/api/admin/canchas/1 -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"activa":false}'                                                                                    # PATCH
-
-# Tarifas por deporte y franja (las franjas de un deporte no pueden superponerse)
-curl localhost:3000/api/admin/tarifas -H "Authorization: Bearer $TOKEN"                                   # GET
-curl -X POST localhost:3000/api/admin/tarifas -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"deporte":"PADEL","horaDesde":9,"horaHasta":12,"precio":28000}'                                    # POST
-curl -X PATCH localhost:3000/api/admin/tarifas/1 -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"precio":42000}'                                                                                    # PATCH
-
-# Política: senaPorcentaje, horasCancelacion, retencionMinutos, minutosAusencia, ausenciasMax, ausenciasDias, horaApertura, horaCierre
-curl localhost:3000/api/admin/politica -H "Authorization: Bearer $TOKEN"                                  # GET
-curl -X PATCH localhost:3000/api/admin/politica -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"senaPorcentaje":40}'                                                                               # PATCH
-
-# Usuarios y roles
-curl "localhost:3000/api/admin/usuarios?rol=RECEPCIONISTA" -H "Authorization: Bearer $TOKEN"              # GET
-curl -X POST localhost:3000/api/admin/usuarios -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"nombre":"Sofia","apellido":"Ruiz","email":"sofia@nikkei.com","password":"clave12345","rol":"RECEPCIONISTA"}'  # POST
-curl -X PATCH localhost:3000/api/admin/usuarios/5 -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"rol":"ENCARGADO","activo":true}'                                                                   # PATCH
-```
-
-## Cómo está organizado el código
-
-1. `src/index.ts` arma la app de Express, monta las rutas y arranca el servidor.
-2. `src/routes/` tiene un archivo por funcionalidad: validan lo que llega con Zod y llaman a un servicio.
-3. `src/services/` tiene la lógica de negocio (reservas, pagos, recepción, bloqueos, caja) y habla con la base.
-4. `src/middleware/` tiene el login por JWT, el control de roles y el manejo de errores.
-5. `src/services/mercadoPago.ts` es el **único** archivo que simula Mercado Pago: para usar el real, solo se reemplaza ese archivo.
-6. `prisma/schema.prisma` define las tablas; `prisma/migrations/` tiene las migraciones SQL.
-7. La segunda migración crea la restricción de exclusión de PostgreSQL: la base rechaza dos reservas activas solapadas en la misma cancha, aunque lleguen a la vez.
-8. Las reservas retenidas vencidas pasan a `EXPIRADA` cada 30 segundos y también antes de consultar o reservar.
-9. Las fechas se guardan en UTC y se interpretan en hora de Buenos Aires (UTC-3); ver `services/fechas.ts`.
-10. `prisma/seed.ts` carga canchas, tarifas, política y usuarios de prueba; se puede correr más de una vez.
-
-## Notas
-
-- Los cambios de base de datos se aplican con `npx prisma migrate deploy` (no uses `migrate dev` sin leer antes: Prisma no conoce la restricción de exclusión que está escrita a mano en SQL).
-- Cambiá `JWT_SECRET` y `WEBHOOK_SECRET` en `.env` antes de publicar el sistema en algún lado.
-- Los estados de una reserva son: `RETENIDA`, `RESERVADA` (cargada en recepción sin seña), `SENADA`, `EN_JUEGO`, `FINALIZADA`, `AUSENTE`, `CANCELADA` y `EXPIRADA`.
-
-## Pendiente (fuera del MVP, marcado como TODO en el código)
-
-WhatsApp y correo reales (hoy se muestran con `console.log`), verificación de email y recuperar contraseña, bloqueo de login tras 5 intentos, turnos fijos semanales, reportes CSV/PDF, auditoría, bloqueos recurrentes, tarifas con vigencia futura, descuentos autorizados por el encargado, pruebas automáticas y Mercado Pago real.
+Luego abrí <http://localhost:5173>.

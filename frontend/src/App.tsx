@@ -23,8 +23,10 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
 
+        {/* Ver canchas y turnos: pública. Para reservar el botón pide iniciar sesión (RF002) */}
+        <Route path="/reservar" element={<Reservar />} />
+
         {/* Clientes */}
-        <Route path="/reservar" element={<RutaProtegida rol="CLIENTE"><Reservar /></RutaProtegida>} />
         <Route path="/mis-reservas" element={<RutaProtegida rol="CLIENTE"><MisReservas /></RutaProtegida>} />
 
         {/* Personal: recepcionista o superior */}

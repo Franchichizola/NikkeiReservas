@@ -64,7 +64,7 @@ export default function Registro() {
         {/* Ley 25.326: hay que aceptar el tratamiento de los datos personales */}
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={acepta} onChange={(e) => setAcepta(e.target.checked)} />
-          <span>Acepto la política de privacidad y el tratamiento de mis datos personales (Ley 25.326).</span>
+          <span>Acepto la política de privacidad y el tratamiento de mis datos personales.</span>
         </label>
         <MensajeError texto={error} />
         <button type="submit" className="btn-primario w-full" disabled={enviando}>

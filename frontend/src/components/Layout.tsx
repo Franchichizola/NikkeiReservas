@@ -75,6 +75,10 @@ export default function Layout() {
               </>
             ) : (
               <>
+                <NavLink to="/reservar" className={claseLink} onClick={() => setMenuAbierto(false)}>
+                  <CalendarDays className="h-4 w-4" />
+                  Ver turnos
+                </NavLink>
                 <NavLink to="/login" className={claseLink} onClick={() => setMenuAbierto(false)}>
                   <LogIn className="h-4 w-4" />
                   Ingresar

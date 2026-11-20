@@ -1,17 +1,19 @@
 import { CalendarDays, CheckCircle2, ChevronRight, Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../auth';
 import { apiCancelar, apiDisponibilidad, apiPagarSena, apiSimularWebhook, CanchaConTurnos, Deporte, Reserva } from '../api';
 import Contador from '../components/Contador';
 import { Cargando, MensajeError, MensajeOk } from '../components/Mensajes';
 import ModalCancha from '../components/ModalCancha';
-import { DEPORTES, fechaHora, hoy, mensajeError, NOMBRE_DEPORTE, pesos } from '../utils';
+import { DEPORTES, fechaHora, hoy, mensajeError, NOMBRE_DEPORTE, panelInicial, pesos } from '../utils';
 
 type CanchaBasica = CanchaConTurnos['cancha'];
 
 // Pantalla 2: elegir deporte y cancha. Al tocar una cancha se abre un pop up con las fechas y los turnos.
 // Después se reserva y se paga la seña (simulada).
 export default function Reservar() {
+  const { usuario, cargando } = useAuth();
   const [deporte, setDeporte] = useState<Deporte>('FUTBOL5');
   const [lista, setLista] = useState<CanchaBasica[] | null>(null); // canchas del deporte; null = cargando
   const [errorLista, setErrorLista] = useState('');
@@ -37,6 +39,9 @@ export default function Reservar() {
       cancelado = true;
     };
   }, [deporte]);
+
+  // El personal no reserva desde acá: va a su panel. Las visitas sin sesión sí pueden ver los turnos.
+  if (!cargando && usuario && usuario.rol !== 'CLIENTE') return <Navigate to={panelInicial(usuario.rol)} replace />;
 
   // El pop up avisa que el turno quedó retenido: se pasa a la pantalla de pago
   function alReservar(r: Reserva) {
@@ -163,6 +168,12 @@ export default function Reservar() {
       </div>
 
       <p className="text-sm text-gray-600">Elegí una cancha para ver las fechas y los turnos disponibles.</p>
+      {!cargando && !usuario && (
+        <p className="rounded-lg bg-amber-50 p-2 text-sm text-amber-900">
+          Podés ver los turnos sin iniciar sesión. Para reservar, <Link to="/login" className="font-semibold underline">ingresá</Link> o{' '}
+          <Link to="/registro" className="font-semibold underline">creá tu cuenta</Link>.
+        </p>
+      )}
 
       <MensajeError texto={error} />
       <MensajeError texto={errorLista} />
