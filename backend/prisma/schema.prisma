@@ -1,0 +1,164 @@
+// Esquema de la base de datos de Nikkei Reservas (MVP)
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client" // usa el adaptador de pg (ver src/db.ts), no necesita motor binario
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  CLIENTE
+  RECEPCIONISTA
+  ENCARGADO
+  ADMINISTRADOR
+}
+
+enum Deporte {
+  FUTBOL5
+  FUTBOL7
+  PADEL
+}
+
+// RETENIDA = esperando la seña (10 min) | RESERVADA = cargada en recepción sin seña
+enum EstadoReserva {
+  RETENIDA
+  RESERVADA
+  SENADA
+  EN_JUEGO
+  FINALIZADA
+  AUSENTE
+  CANCELADA
+  EXPIRADA
+}
+
+enum TipoPago {
+  SENA
+  SALDO
+  REEMBOLSO
+}
+
+enum MedioPago {
+  MERCADO_PAGO
+  EFECTIVO
+  TRANSFERENCIA
+  QR
+  TARJETA
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+model Usuario {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  apellido         String    @default("")
+  email            String?   @unique // opcional: clientes cargados en recepción no tienen email
+  telefono         String?
+  passwordHash     String? // null = cuenta simplificada, no puede iniciar sesión
+  rol              Rol       @default(CLIENTE)
+  activo           Boolean   @default(true)
+  consentimientoEn DateTime? // Ley 25.326: fecha en que aceptó el tratamiento de datos
+  creadoEn         DateTime  @default(now())
+
+  reservas Reserva[]
+}
+
+model Cancha {
+  id          Int     @id @default(autoincrement())
+  nombre      String  @unique
+  deporte     Deporte
+  duracionMin Int // 60 fútbol, 90 pádel
+  activa      Boolean @default(true)
+
+  reservas Reserva[]
+  bloqueos Bloqueo[]
+}
+
+// Precio por deporte y franja horaria (horas enteras, ej. 9 a 18)
+model Tarifa {
+  id         Int     @id @default(autoincrement())
+  deporte    Deporte
+  horaDesde  Int
+  horaHasta  Int
+  precio     Int // en pesos, por turno
+}
+
+// Una sola fila (id = 1) con los parámetros de política
+model Politica {
+  id                Int @id @default(1)
+  senaPorcentaje    Int @default(30)
+  horasCancelacion  Int @default(12)
+  retencionMinutos  Int @default(10)
+  minutosAusencia   Int @default(15)
+  ausenciasMax      Int @default(3)
+  ausenciasDias     Int @default(60)
+  horaApertura      Int @default(9)
+  horaCierre        Int @default(24)
+}
+
+model Reserva {
+  id                 Int           @id @default(autoincrement())
+  canchaId           Int
+  clienteId          Int
+  inicio             DateTime
+  fin                DateTime
+  estado             EstadoReserva
+  precio             Int
+  montoSena          Int // lo que se debe pagar de seña (o el total si hay pago total requerido)
+  pagoTotalRequerido Boolean       @default(false)
+  reprogramada       Boolean       @default(false)
+  retenidaHasta      DateTime?
+  creadaEn           DateTime      @default(now())
+
+  cancha  Cancha  @relation(fields: [canchaId], references: [id])
+  cliente Usuario @relation(fields: [clienteId], references: [id])
+  pagos   Pago[]
+
+  @@index([canchaId, inicio])
+  @@index([clienteId])
+}
+
+model Pago {
+  id        Int        @id @default(autoincrement())
+  reservaId Int
+  tipo      TipoPago
+  medio     MedioPago
+  estado    EstadoPago
+  monto     Int
+  externoId String?    @unique // id del pago en Mercado Pago (simulado)
+  creadoEn  DateTime   @default(now())
+
+  reserva Reserva @relation(fields: [reservaId], references: [id])
+
+  @@index([creadoEn])
+}
+
+model Bloqueo {
+  id       Int      @id @default(autoincrement())
+  canchaId Int
+  inicio   DateTime
+  fin      DateTime
+  motivo   String
+  activo   Boolean  @default(true)
+  creadoEn DateTime @default(now())
+
+  cancha Cancha @relation(fields: [canchaId], references: [id])
+}
+
+model CierreCaja {
+  id              Int      @id @default(autoincrement())
+  fecha           String   @unique // "YYYY-MM-DD"
+  totalCobrado    Int
+  totalReembolsos Int
+  efectivoEsperado Int
+  efectivoContado Int
+  diferencia      Int
+  observacion     String?
+  creadoEn        DateTime @default(now())
+}

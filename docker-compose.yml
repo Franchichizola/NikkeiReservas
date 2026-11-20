@@ -1,0 +1,17 @@
+# Solo levanta PostgreSQL. El backend se ejecuta con npm (ver README).
+services:
+  db:
+    image: postgres:16
+    container_name: nikkei-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nikkei
+      POSTGRES_PASSWORD: nikkei
+      POSTGRES_DB: nikkei
+    ports:
+      - "5432:5432"
+    volumes:
+      - nikkei_datos:/var/lib/postgresql/data
+
+volumes:
+  nikkei_datos:
